@@ -19,6 +19,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { ProductState } from '@/lib/validators/product-validator';
 
 const SORT_OPTIONS = [
   {
@@ -54,14 +55,15 @@ const COLOR_FILTERS = {
   ] as const,
 };
 
+const DEFAULT_CUSTOM_PRICE = [0, 100] as [number, number];
+
 export default function Home() {
-  const [filter, setFilter] = useState({ sort: 'none', color: [] });
-  function handleSort(value: string) {
-    setFilter((prev) => ({
-      ...prev,
-      sort: value,
-    }));
-  }
+  const [filter, setFilter] = useState<ProductState>({
+    sort: 'none',
+    color: ['white', 'beige', 'blue', 'green', 'purple'],
+    price: { isCustom: false, range: DEFAULT_CUSTOM_PRICE },
+    size: ['S', 'M', 'L'],
+  });
 
   const { data: products } = useQuery({
     queryKey: ['products'],
@@ -74,8 +76,29 @@ export default function Home() {
     },
   });
 
-  console.log(products);
+  //TODO sort filter function
 
+  function applyArrayFilter({
+    category,
+    value,
+  }: {
+    category: keyof Omit<typeof filter, 'price' | 'sort'>;
+    value: string;
+  }) {
+    const isFilterApplied = filter[category].includes(value as never);
+    if (isFilterApplied) {
+      setFilter((prev) => ({
+        ...prev,
+        [category]: prev[category].filter((item) => item !== value),
+      }));
+    } else {
+      setFilter((prev) => ({
+        ...prev,
+        [category]: [...prev[category], value],
+      }));
+    }
+  }
+  console.log(filter);
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="flex items-baseline justify-between border-b border-gray-200 pb-6 pt-24">
@@ -95,7 +118,12 @@ export default function Home() {
                     'text-gray-900 bg-gray-100': option.value === filter.sort,
                     'text-gray-500': option.value !== filter.sort,
                   })}
-                  onClick={() => handleSort(option.value)}
+                  onClick={() => {
+                    setFilter((prev) => ({
+                      ...prev,
+                      sort: option.value,
+                    }));
+                  }}
                   key={option.name}
                 >
                   {option.name}
@@ -138,6 +166,10 @@ export default function Home() {
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           type="checkbox"
                           id={`color-${optionIdx}`}
+                          onChange={() =>
+                            applyArrayFilter({ category: 'color', value: option.value })
+                          }
+                          checked={filter.color.includes(option.value)}
                         />
                         <label
                           className="ml-3 text-sm text-gray-600"
