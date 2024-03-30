@@ -20,6 +20,9 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { ProductState } from '@/lib/validators/product-validator';
+import { Slider } from '@/components/ui/slider';
+
+const CURRENCY_SIGN = '€';
 
 const SORT_OPTIONS = [
   {
@@ -61,6 +64,17 @@ const SIZE_FILTERS = {
     { value: 'S', label: 'S' },
     { value: 'M', label: 'M' },
     { value: 'L', label: 'L' },
+  ],
+} as const;
+
+const PRICE_FILTERS = {
+  id: 'price',
+  name: 'Price',
+  options: [
+    { value: [0, 100], label: 'Any price' },
+    { value: [0, 20], label: `Under 20${CURRENCY_SIGN}` },
+    { value: [0, 40], label: `Under 40${CURRENCY_SIGN}` },
+    //custom option in JSX
   ],
 } as const;
 
@@ -108,6 +122,9 @@ export default function Home() {
     }
   }
   console.log(filter);
+
+  const minPrice = Math.min(filter.price.range[0], filter.price.range[1]);
+  const maxPrice = Math.max(filter.price.range[0], filter.price.range[1]);
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="flex items-baseline justify-between border-b border-gray-200 pb-6 pt-24">
@@ -194,7 +211,7 @@ export default function Home() {
               {/* size filter */}
               <AccordionItem value="size">
                 <AccordionTrigger className="py-3 text-sm text-gray-400 hover:text-gray-500">
-                  <span className="font-medium text-gray-900">Color</span>
+                  <span className="font-medium text-gray-900">Size</span>
                 </AccordionTrigger>
                 <AccordionContent className="pt-6 animate-none">
                   <ul className="space-y-4">
@@ -220,32 +237,84 @@ export default function Home() {
                   </ul>
                 </AccordionContent>
               </AccordionItem>
-      {/* price filter */}
-              <AccordionItem value="size">
+              {/* price filter */}
+              <AccordionItem value="price">
                 <AccordionTrigger className="py-3 text-sm text-gray-400 hover:text-gray-500">
-                  <span className="font-medium text-gray-900">Color</span>
+                  <span className="font-medium text-gray-900">Price</span>
                 </AccordionTrigger>
                 <AccordionContent className="pt-6 animate-none">
                   <ul className="space-y-4">
-                    {SIZE_FILTERS.options.map((option, optionIdx) => (
-                      <li className="flex items-center" key={option.value}>
+                    {PRICE_FILTERS.options.map((option, optionIdx) => (
+                      <li className="flex items-center" key={option.label}>
                         <input
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          type="checkbox"
-                          id={`size-${optionIdx}`}
+                          type="radio"
+                          id={`price-${optionIdx}`}
                           onChange={() =>
-                            applyArrayFilter({ category: 'size', value: option.value })
+                            setFilter((prev) => ({
+                              ...prev,
+                              price: {
+                                isCustom: false,
+                                range: [...option.value],
+                              },
+                            }))
                           }
-                          checked={filter.size.includes(option.value)}
+                          checked={
+                            !filter.price.isCustom &&
+                            filter.price.range[0] === option.value[0] &&
+                            filter.price.range[1] === option.value[1]
+                          }
                         />
                         <label
                           className="ml-3 text-sm text-gray-600"
-                          htmlFor={`size-${optionIdx}`}
+                          htmlFor={`price-${optionIdx}`}
                         >
                           {option.label}
                         </label>
                       </li>
                     ))}
+                    <li className="flex justify-center flex-col gap-2 ">
+                      <div>
+                        <input
+                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          type="radio"
+                          id={`price-${PRICE_FILTERS.options.length}`}
+                          onChange={() =>
+                            setFilter((prev) => ({
+                              ...prev,
+                              price: {
+                                isCustom: true,
+                                range: [0, 100],
+                              },
+                            }))
+                          }
+                          checked={filter.price.isCustom}
+                        />
+                        <label
+                          className="ml-3 text-sm text-gray-600"
+                          htmlFor={`price-${PRICE_FILTERS.options.length}`}
+                        >
+                          {`Custom`}
+                        </label>
+                      </div>
+                      <div className="flex justify-between">
+                        <p className="font-medium">Price</p>
+                        <div>
+                          {filter.price.isCustom
+                            ? minPrice.toFixed(0)
+                            : filter.price.range[0].toFixed(0)}
+                          {` ${CURRENCY_SIGN} - `}
+                          {filter.price.isCustom
+                            ? maxPrice.toFixed(0)
+                            : filter.price.range[1].toFixed(0)}
+                          {` ${CURRENCY_SIGN}`}
+                        </div>
+                      </div>
+                      <Slider
+                        className={cn({ 'opacity-50': !filter.price.isCustom })}
+                        disabled={!filter.price.isCustom}
+                      />
+                    </li>
                   </ul>
                 </AccordionContent>
               </AccordionItem>
