@@ -11,7 +11,7 @@ import { QueryResult } from '@upstash/vector';
 import axios from 'axios';
 import { ChevronDown, Filter } from 'lucide-react';
 import { useState } from 'react';
-import Product, * as ProductComponent from '@/components/Products/Product';
+import Product from '@/components/Products/Product';
 import ProductSkeleton from '@/components/Products/ProductSkeleton';
 import {
   Accordion,
@@ -88,12 +88,19 @@ export default function Home() {
     size: ['S', 'M', 'L'],
   });
 
-  const { data: products } = useQuery({
+  const { data: products, refetch } = useQuery({
     queryKey: ['products'],
     queryFn: async () => {
       const { data } = await axios.post<QueryResult<TProduct>[]>(
         'http://localhost:3000/api/products',
-        { filter: { sort: filter.sort } }
+        {
+          filter: {
+            sort: filter.sort,
+            color: filter.color,
+            price: filter.price.range,
+            size: filter.size,
+          },
+        }
       );
       return data;
     },
@@ -120,11 +127,15 @@ export default function Home() {
         [category]: [...prev[category], value],
       }));
     }
+    onSubmit();
   }
   console.log(filter);
 
+  const onSubmit = () => refetch();
+
   const minPrice = Math.min(filter.price.range[0], filter.price.range[1]);
   const maxPrice = Math.max(filter.price.range[0], filter.price.range[1]);
+
   return (
     <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="flex items-baseline justify-between border-b border-gray-200 pb-6 pt-24">

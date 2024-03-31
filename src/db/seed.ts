@@ -1,4 +1,4 @@
-import { type Product, db } from '.'
+import { type TProduct, db } from '.'
 import * as dotenv from 'dotenv'
 
 dotenv.config()
@@ -12,7 +12,7 @@ const COLORS = ['white', 'beige', 'blue', 'green', 'purple'] as const
 const SIZES = ['S', 'M', 'L'] as const
 
 const seed = async () => {
-  const products: Product[] = []
+  const products: TProduct[] = []
 
   // 3 example products
   for (let i = 0; i < 3; i++) {
