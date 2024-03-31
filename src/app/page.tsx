@@ -10,7 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { QueryResult } from '@upstash/vector';
 import axios from 'axios';
 import { ChevronDown, Filter } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Product from '@/components/Products/Product';
 import ProductSkeleton from '@/components/Products/ProductSkeleton';
 import {
@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/accordion';
 import { ProductState } from '@/lib/validators/product-validator';
 import { Slider } from '@/components/ui/slider';
+import debounce from 'lodash.debounce';
+import EmptyState from '@/components/Products/EmptyState';
 
 const CURRENCY_SIGN = '€';
 
@@ -127,11 +129,14 @@ export default function Home() {
         [category]: [...prev[category], value],
       }));
     }
-    onSubmit();
+    memoizedDebouncedSubmit();
   }
   console.log(filter);
 
   const onSubmit = () => refetch();
+
+  const debouncedSubmit = debounce(onSubmit, 300);
+  const memoizedDebouncedSubmit = useCallback(debouncedSubmit, []);
 
   const minPrice = Math.min(filter.price.range[0], filter.price.range[1]);
   const maxPrice = Math.max(filter.price.range[0], filter.price.range[1]);
@@ -160,6 +165,7 @@ export default function Home() {
                       ...prev,
                       sort: option.value,
                     }));
+                    memoizedDebouncedSubmit();
                   }}
                   key={option.name}
                 >
@@ -261,15 +267,16 @@ export default function Home() {
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           type="radio"
                           id={`price-${optionIdx}`}
-                          onChange={() =>
+                          onChange={() => {
                             setFilter((prev) => ({
                               ...prev,
                               price: {
                                 isCustom: false,
                                 range: [...option.value],
                               },
-                            }))
-                          }
+                            }));
+                            memoizedDebouncedSubmit();
+                          }}
                           checked={
                             !filter.price.isCustom &&
                             filter.price.range[0] === option.value[0] &&
@@ -290,15 +297,16 @@ export default function Home() {
                           className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                           type="radio"
                           id={`price-${PRICE_FILTERS.options.length}`}
-                          onChange={() =>
+                          onChange={() => {
                             setFilter((prev) => ({
                               ...prev,
                               price: {
                                 isCustom: true,
                                 range: [0, 100],
                               },
-                            }))
-                          }
+                            }));
+                            memoizedDebouncedSubmit();
+                          }}
                           checked={filter.price.isCustom}
                         />
                         <label
@@ -334,6 +342,8 @@ export default function Home() {
                               range: [newMin, newMax],
                             },
                           }));
+
+                          memoizedDebouncedSubmit();
                         }}
                         value={
                           filter.price.isCustom
@@ -354,11 +364,15 @@ export default function Home() {
           </div>
           {/* Product grid */}
           <ul className="lg:col-span-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {products
-              ? products.map((product) => (
-                  <Product key={product.id} product={product.metadata!} />
-                ))
-              : new Array(12).fill(null).map((_, i) => <ProductSkeleton key={i} />)}
+            {products && products.length === 0 ? (
+              <EmptyState />
+            ) : products ? (
+              products.map((product) => (
+                <Product key={product.id} product={product.metadata!} />
+              ))
+            ) : (
+              new Array(12).fill(null).map((_, i) => <ProductSkeleton key={i} />)
+            )}
           </ul>
         </div>
       </section>
