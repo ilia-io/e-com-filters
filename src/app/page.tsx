@@ -94,7 +94,7 @@ export default function Home() {
     queryKey: ['products'],
     queryFn: async () => {
       const { data } = await axios.post<QueryResult<TProduct>[]>(
-        'http://localhost:3000/api/products',
+        `${process.env.NEXT_PUBLIC_API_URL}`,
         {
           filter: {
             sort: filter.sort,
@@ -131,7 +131,6 @@ export default function Home() {
     }
     memoizedDebouncedSubmit();
   }
-  console.log(filter);
 
   const onSubmit = () => refetch();
 
